@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego Programación PRO</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background: radial-gradient(circle at top,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
+}
+
+h1{
+background:rgba(0,0,0,0.4);
+padding:20px;
+}
+
+.contenedor{
+margin:20px auto;
+padding:20px;
+width:80%;
+background:rgba(0,0,0,0.5);
+border-radius:15px;
+box-shadow:0 0 15px cyan;
+backdrop-filter: blur(10px);
+}
+
+button{
+padding:10px;
+margin:10px;
+border:none;
+border-radius:10px;
+background:#00c6ff;
+color:white;
+cursor:pointer;
+transition:0.3s;
+font-weight:bold;
+}
+
+button:hover{
+transform:scale(1.1);
+box-shadow:0 0 10px cyan;
+background:#0072ff;
+}
+
+input{
+padding:10px;
+margin:10px;
+border-radius:10px;
+border:none;
+}
+
+#barraXP{
+width:80%;
+height:20px;
+background:#333;
+border-radius:20px;
+margin:auto;
+}
+
+#progresoXP{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,lime,cyan);
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎮 Aprende Programación PRO</h1>
+
+<!-- LOGIN -->
+<div class="contenedor" id="login">
+<h2>👤 Registro</h2>
+<input type="text" id="nombre" placeholder="Nombre"><br>
+<input type="email" id="correo" placeholder="Correo"><br>
+<button onclick="registrar()">Entrar</button>
+</div>
+
+<!-- JUEGO -->
+<div id="juego" style="display:none;">
+
+<div class="contenedor">
+<p id="vidas"></p>
+
+<div id="barraXP">
+<div id="progresoXP"></div>
+</div>
+
+<p id="nivelTexto"></p>
+<button onclick="reiniciarJuego()">🔄 Reiniciar</button>
+</div>
+
+<div class="contenedor">
+<h2 id="pregunta"></h2>
+<div id="opciones"></div>
+</div>
+
+</div>
+
+<script>
+
+// ===== VARIABLES =====
+let usuario=null;
+let vidas=3;
+let xp=0;
+let nivel=0;
+let preguntaActual=0;
+
+// ===== REGISTRO =====
+function registrar(){
+let nombre=document.getElementById("nombre").value;
+let correo=document.getElementById("correo").value;
+
+if(nombre===""||correo===""){
+alert("Completa los datos");
+return;
+}
+
+usuario={nombre,correo,progreso:0};
+
+let usuarios=JSON.parse(localStorage.getItem("usuarios"))||[];
+usuarios.push(usuario);
+localStorage.setItem("usuarios",JSON.stringify(usuarios));
+
+document.getElementById("login").style.display="none";
+
+iniciarTestNivel();
+}
+
+// ===== TEST NIVEL =====
+const testNivel=[
+{p:"¿Qué es una API?",r:"comunicacion"},
+{p:"¿Qué es XSS?",r:"ataque"},
+{p:"¿Qué es SELECT?",r:"consulta"},
+{p:"¿Qué es HTML?",r:"estructura"},
+{p:"¿Qué hace CSS?",r:"diseño"},
+{p:"¿Qué es JS?",r:"logica"},
+{p:"¿Qué es firewall?",r:"seguridad"},
+{p:"¿Qué es JSON?",r:"datos"},
+{p:"¿Qué es backend?",r:"servidor"},
+{p:"¿Qué es SQL?",r:"base"}
+];
+
+let preguntaTest=0;
+let puntajeTest=0;
+
+function iniciarTestNivel(){
+alert("🧠 Test de nivel iniciado");
+mostrarPreguntaTest();
+}
+
+function mostrarPreguntaTest(){
+if(preguntaTest>=testNivel.length){
+alert("Resultado: "+puntajeTest+"/10");
+seleccionarEspecialidad();
+return;
+}
+
+let r=prompt(testNivel[preguntaTest].p);
+
+if(r && r.toLowerCase().includes(testNivel[preguntaTest].r)){
+puntajeTest++;
+}
+
+preguntaTest++;
+mostrarPreguntaTest();
+}
+
+// ===== ESPECIALIDAD =====
+function seleccionarEspecialidad(){
+let opcion=prompt("Elige especialidad:\n1. Ciberseguridad\n2. Web\n3. Base de Datos");
+
+if(opcion==1) usuario.especialidad="Ciberseguridad";
+else if(opcion==2) usuario.especialidad="Web";
+else usuario.especialidad="Base de Datos";
+
+alert("Elegiste: "+usuario.especialidad);
+
+document.getElementById("juego").style.display="block";
+
+actualizarUI();
+cargarPregunta();
+}
+
+// ===== PREGUNTAS =====
+const juego=[
+[
+{p:"¿Qué es una variable?",o:["Guardar datos","Bucle","Evento","HTML","CSS"],c:0},
+{p:"¿Qué es HTML?",o:["Estructura web","Base datos","Juego","App","Servidor"],c:0},
+{p:"¿Qué hace CSS?",o:["Diseño","Lógica","BD","Servidor","Nada"],c:0},
+{p:"¿Qué es JS?",o:["Lenguaje programación","Color","Imagen","Texto","Nada"],c:0},
+{p:"¿Etiqueta básica?",o:["<p>","if","for","while","var"],c:0}
+]
+];
+
+// ===== MEZCLAR OPCIONES =====
+function mezclarOpciones(pregunta){
+let opciones=pregunta.o.map((t,i)=>({
+texto:t,
+correcta:i===pregunta.c
+}));
+
+for(let i=opciones.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[opciones[i],opciones[j]]=[opciones[j],opciones[i]];
+}
+
+return opciones;
+}
+
+// ===== UI =====
+function actualizarUI(){
+document.getElementById("vidas").innerHTML="❤️".repeat(vidas);
+document.getElementById("progresoXP").style.width=xp+"%";
+document.getElementById("nivelTexto").innerText=
+"Nivel "+(nivel+1)+" - Pregunta "+(preguntaActual+1);
+}
+
+// ===== CARGAR PREGUNTA =====
+function cargarPregunta(){
+let p=juego[nivel][preguntaActual];
+document.getElementById("pregunta").innerText=p.p;
+
+let opciones=mezclarOpciones(p);
+
+let html="";
+opciones.forEach(op=>{
+html+=`<button onclick="responder(${op.correcta})">${op.texto}</button>`;
+});
+
+document.getElementById("opciones").innerHTML=html;
+}
+
+// ===== RESPONDER =====
+function responder(correcta){
+if(correcta){
+xp=Math.min(xp+10,100);
+preguntaActual++;
+
+if(preguntaActual>=juego[nivel].length){
+nivel++;
+preguntaActual=0;
+
+if(nivel>=juego.length){
+alert("🏆 GANASTE");
+reiniciarJuego();
+return;
+}
+
+alert("🎉 Nivel superado");
+}
+}else{
+vidas--;
+if(vidas<=0){
+alert("💀 Game Over");
+reiniciarJuego();
+return;
+}
+}
+
+guardarProgreso();
+actualizarUI();
+cargarPregunta();
+}
+
+// ===== GUARDAR =====
+function guardarProgreso(){
+localStorage.setItem(usuario.correo,JSON.stringify({
+xp,nivel
+}));
+}
+
+// ===== RESET =====
+function reiniciarJuego(){
+vidas=3;
+xp=0;
+nivel=0;
+preguntaActual=0;
+actualizarUI();
+cargarPregunta();
+}
+
+</script>
+
+</body>
+</html>

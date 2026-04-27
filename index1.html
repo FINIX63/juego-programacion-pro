@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Juego Programación PRO</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="login">
+<h2>Registro</h2>
+<input id="nombre" placeholder="Nombre">
+<input id="correo" placeholder="Correo">
+<button onclick="registrar()">Entrar</button>
+</div>
+
+<div id="juego" style="display:none;">
+<h1>🎮 Aprende Programación</h1>
+
+<p id="vidas"></p>
+<div id="barraXP"><div id="progresoXP"></div></div>
+<p id="nivelTexto"></p>
+
+<h2 id="pregunta"></h2>
+<div id="opciones"></div>
+
+<button onclick="reiniciarJuego()">Reiniciar</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
