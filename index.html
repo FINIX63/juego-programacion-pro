@@ -8,7 +8,7 @@
 <style>
 body{
 margin:0;
-font-family:Arial;
+font-family:'Segoe UI',sans-serif;
 background: radial-gradient(circle at top,#0f2027,#203a43,#2c5364);
 color:white;
 text-align:center;
@@ -17,24 +17,306 @@ text-align:center;
 h1{
 background:rgba(0,0,0,0.4);
 padding:20px;
+margin:0;
 }
 
 .contenedor{
 margin:20px auto;
 padding:20px;
-width:80%;
+width:85%;
+max-width:700px;
 background:rgba(0,0,0,0.5);
 border-radius:15px;
-box-shadow:0 0 15px cyan;
+box-shadow:0 0 20px cyan;
 backdrop-filter: blur(10px);
+animation:fadeIn .5s;
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(20px);}
+to{opacity:1; transform:translateY(0);}
 }
 
 button{
-padding:10px;
-margin:10px;
+padding:12px;
+margin:8px;
 border:none;
-border-radius:10px;
+border-radius:12px;
 background:#00c6ff;
+color:white;
+cursor:pointer;
+transition:.3s;
+font-weight:bold;
+}
+
+button:hover{
+transform:scale(1.08);
+box-shadow:0 0 10px cyan;
+background:#0072ff;
+}
+
+input{
+padding:12px;
+margin:10px;
+border-radius:10px;
+border:none;
+width:70%;
+}
+
+#barraXP{
+width:90%;
+height:20px;
+background:#333;
+border-radius:20px;
+margin:auto;
+}
+
+#progresoXP{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,lime,cyan);
+border-radius:20px;
+}
+
+.oculto{display:none;}
+</style>
+</head>
+
+<body>
+
+<h1>🎮 Aprende Programación PRO</h1>
+
+<!-- LOGIN -->
+<div class="contenedor" id="login">
+<h2>👤 Registro</h2>
+<input id="nombre" placeholder="Nombre"><br>
+<input id="correo" placeholder="Correo"><br>
+<button onclick="registrar()">Entrar</button>
+</div>
+
+<!-- TEST -->
+<div class="contenedor oculto" id="testBox">
+<h2 id="preguntaTest"></h2>
+<input id="respuestaTest" placeholder="Tu respuesta">
+<br>
+<button onclick="responderTest()">Responder</button>
+</div>
+
+<!-- ESPECIALIDAD -->
+<div class="contenedor oculto" id="especialidadBox">
+<h2>🎯 Elige tu camino</h2>
+
+<button onclick="elegirEspecialidad('Ciberseguridad')">🛡 Ciberseguridad</button>
+<button onclick="elegirEspecialidad('Web')">🌐 Desarrollo Web</button>
+<button onclick="elegirEspecialidad('Base de Datos')">🗄 Base de Datos</button>
+</div>
+
+<!-- JUEGO -->
+<div id="juego" class="oculto">
+
+<div class="contenedor">
+<p id="vidas"></p>
+
+<div id="barraXP">
+<div id="progresoXP"></div>
+</div>
+
+<p id="nivelTexto"></p>
+
+<button onclick="preguntaAnterior()">⬅ Anterior</button>
+<button onclick="reiniciarJuego()">🔄 Reiniciar</button>
+</div>
+
+<div class="contenedor">
+<h2 id="pregunta"></h2>
+<div id="opciones"></div>
+</div>
+
+</div>
+
+<script>
+
+// ===== VARIABLES =====
+let usuario=null;
+let vidas=3,xp=0,nivel=0,preguntaActual=0;
+
+// ===== REGISTRO =====
+function registrar(){
+let nombre=nombreInput.value.trim();
+let correo=correo.value.trim();
+
+if(!nombre||!correo)return alert("Completa los datos");
+
+usuario={nombre,correo};
+
+let db=JSON.parse(localStorage.getItem("usuarios"))||[];
+db.push(usuario);
+localStorage.setItem("usuarios",JSON.stringify(db));
+
+login.classList.add("oculto");
+testBox.classList.remove("oculto");
+
+mostrarPreguntaTest();
+}
+
+// ===== TEST NIVEL =====
+const testNivel=[
+{p:"¿Qué hace una API?",r:"comunica"},
+{p:"¿Qué es XSS?",r:"ataque"},
+{p:"¿SELECT en SQL?",r:"consulta"},
+{p:"HTML sirve para?",r:"estructura"},
+{p:"CSS sirve para?",r:"diseño"},
+{p:"JS sirve para?",r:"logica"},
+{p:"Firewall?",r:"seguridad"},
+{p:"JSON?",r:"datos"},
+{p:"Backend?",r:"servidor"},
+{p:"SQL?",r:"base"}
+];
+
+let iTest=0,puntaje=0;
+
+function mostrarPreguntaTest(){
+preguntaTest.innerText=testNivel[iTest].p;
+respuestaTest.value="";
+}
+
+function responderTest(){
+let r=respuestaTest.value.toLowerCase();
+
+if(r.includes(testNivel[iTest].r)) puntaje++;
+
+iTest++;
+
+if(iTest>=testNivel.length){
+alert("Resultado: "+puntaje+"/10");
+testBox.classList.add("oculto");
+especialidadBox.classList.remove("oculto");
+return;
+}
+
+mostrarPreguntaTest();
+}
+
+// ===== ESPECIALIDAD =====
+function elegirEspecialidad(tipo){
+usuario.especialidad=tipo;
+alert("Elegiste: "+tipo);
+
+especialidadBox.classList.add("oculto");
+juego.classList.remove("oculto");
+
+actualizarUI();
+cargarPregunta();
+}
+
+// ===== PREGUNTAS =====
+const juego=[
+[
+{p:"¿Qué es una variable?",o:["Guardar datos","Bucle","Evento","HTML"],c:0},
+{p:"¿Qué es HTML?",o:["Estructura web","Lenguaje BD","Servidor","App"],c:0},
+{p:"¿Qué hace CSS?",o:["Diseño","Lógica","Datos","Servidor"],c:0},
+{p:"¿Qué es JS?",o:["Lenguaje programación","Imagen","Color","Texto"],c:0},
+{p:"¿Etiqueta HTML básica?",o:["<p>","if","for","while"],c:0}
+],
+[
+{p:"¿Qué es un if?",o:["Condición","Bucle","Variable","Error"],c:0},
+{p:"¿Qué hace else?",o:["Alternativa","Error","Loop","Nada"],c:0},
+{p:"¿Comparador igualdad?",o:["==","++","--","//"],c:0},
+{p:"¿Mayor que?",o:[">","<","=","!="],c:0},
+{p:"¿Menor que?",o:["<",">","=","!="],c:0}
+]
+];
+
+// ===== MEZCLA =====
+function mezclar(p){
+let arr=p.o.map((t,i)=>({t,ok:i===p.c}));
+for(let i=arr.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[arr[i],arr[j]]=[arr[j],arr[i]];
+}
+return arr;
+}
+
+// ===== UI =====
+function actualizarUI(){
+vidas.innerHTML="❤️".repeat(vidas);
+progresoXP.style.width=xp+"%";
+nivelTexto.innerText=`Nivel ${nivel+1} - Pregunta ${preguntaActual+1}`;
+}
+
+// ===== PREGUNTA =====
+function cargarPregunta(){
+let p=juego[nivel][preguntaActual];
+pregunta.innerText=p.p;
+
+let ops=mezclar(p);
+opciones.innerHTML="";
+
+ops.forEach(o=>{
+let b=document.createElement("button");
+b.innerText=o.t;
+b.onclick=()=>responder(o.ok);
+opciones.appendChild(b);
+});
+}
+
+// ===== RESPONDER =====
+function responder(ok){
+if(ok){
+xp=Math.min(xp+10,100);
+preguntaActual++;
+
+if(preguntaActual>=juego[nivel].length){
+nivel++;
+preguntaActual=0;
+
+if(nivel>=juego.length){
+alert("🏆 GANASTE TODO");
+reiniciarJuego();
+return;
+}
+}
+}else{
+vidas--;
+if(vidas<=0){
+alert("💀 Game Over");
+reiniciarJuego();
+return;
+}
+}
+
+guardar();
+actualizarUI();
+cargarPregunta();
+}
+
+// ===== ATRAS =====
+function preguntaAnterior(){
+if(preguntaActual>0){
+preguntaActual--;
+cargarPregunta();
+}
+}
+
+// ===== GUARDAR =====
+function guardar(){
+localStorage.setItem(usuario.correo,JSON.stringify({xp,nivel}));
+}
+
+// ===== RESET =====
+function reiniciarJuego(){
+vidas=3;
+xp=0;
+nivel=0;
+preguntaActual=0;
+actualizarUI();
+cargarPregunta();
+}
+
+</script>
+
+</body>
+</html>background:#00c6ff;
 color:white;
 cursor:pointer;
 transition:0.3s;
