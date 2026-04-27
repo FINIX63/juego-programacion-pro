@@ -21,6 +21,12 @@ width:90%;
 max-width:700px;
 background:rgba(0,0,0,0.6);
 border-radius:15px;
+animation:fade .5s;
+}
+
+@keyframes fade{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1;transform:translateY(0)}
 }
 
 button{
@@ -31,12 +37,39 @@ border-radius:10px;
 background:#00c6ff;
 color:white;
 cursor:pointer;
+transition:.3s;
 }
 
-button:hover{background:#0072ff}
+button:hover{background:#0072ff; transform:scale(1.05)}
+
+input{
+padding:10px;
+border-radius:10px;
+border:none;
+margin:10px;
+width:70%;
+}
 
 .oculto{display:none}
 
+/* BARRA VIDA */
+#vidaBar{
+width:90%;
+height:20px;
+background:#333;
+border-radius:20px;
+margin:auto;
+overflow:hidden;
+}
+
+#vida{
+height:100%;
+width:100%;
+background:linear-gradient(90deg,lime,green);
+transition:.5s;
+}
+
+/* FINAL */
 #pantallaFinal{
 position:fixed;
 top:0;left:0;
@@ -65,14 +98,17 @@ z-index:999;
 
 <div id="especialidad" class="contenedor oculto">
 <h2>Elige especialidad</h2>
-<button onclick="elegir('ciber')">🛡 Ciberseguridad</button>
 <button onclick="elegir('web')">🌐 Web</button>
+<button onclick="elegir('ciber')">🛡 Ciberseguridad</button>
 <button onclick="elegir('bd')">🗄 Base de Datos</button>
 </div>
 
 <div id="juego" class="contenedor oculto">
 <p id="info"></p>
-<p id="vidas"></p>
+
+<div id="vidaBar">
+<div id="vida"></div>
+</div>
 
 <h2 id="pregunta"></h2>
 <div id="opciones"></div>
@@ -89,8 +125,8 @@ z-index:999;
 <script>
 
 // ===== VARIABLES =====
-let usuario, campo;
-let vidas=3,xp=0,nivel=0,preguntaIndex=0;
+let usuario,campo;
+let vidas=100,xp=0,nivel=0,pIndex=0;
 let preguntas=[];
 
 // ===== LOGIN =====
@@ -100,16 +136,16 @@ nombre:nombre.value,
 correo:correo.value
 };
 
-if(!usuario.nombre||!usuario.correo) return alert("Llena datos");
+if(!usuario.nombre||!usuario.correo) return alert("Completa datos");
 
-let data=JSON.parse(localStorage.getItem("users"))||{};
-if(data[usuario.correo]){
-// cargar progreso
-let u=data[usuario.correo];
-nivel=u.nivel;
-xp=u.xp;
-campo=u.campo;
+let db=JSON.parse(localStorage.getItem("users"))||{};
+if(db[usuario.correo]){
+let u=db[usuario.correo];
+nivel=u.nivel||0;
+xp=u.xp||0;
+campo=u.campo||null;
 }
+
 login.classList.add("oculto");
 especialidad.classList.remove("oculto");
 }
@@ -120,40 +156,52 @@ campo=c;
 especialidad.classList.add("oculto");
 juego.classList.remove("oculto");
 
-generarNivel();
+generarPreguntas();
 actualizar();
 }
 
-// ===== GENERAR PREGUNTAS =====
-function generarNivel(){
+// ===== BASE REAL DE PREGUNTAS =====
+const banco={
+web:[
+["¿Qué etiqueta crea un enlace?",["<a>","<p>","<div>","<link>"],0],
+["¿Qué propiedad cambia color texto?",["color","font","text","bg"],0],
+["¿Qué hace display:flex?",["Organiza elementos","Cambia color","Crea BD","Nada"],0],
+["¿Qué es DOM?",["Estructura HTML en JS","Servidor","BD","Nada"],0],
+["¿Evento click?",["onclick","hover","css","html"],0]
+],
+ciber:[
+["¿Qué es phishing?",["Robo de datos","Virus","Firewall","BD"],0],
+["¿Qué hace un firewall?",["Filtra tráfico","Guarda datos","Diseña web","Nada"],0],
+["¿HTTPS significa?",["Conexión segura","Error web","Servidor","Nada"],0],
+["¿Qué es malware?",["Software malicioso","Diseño","HTML","BD"],0],
+["¿Ataque XSS?",["Inyección script","Base datos","Loop","Nada"],0]
+],
+bd:[
+["¿SELECT sirve para?",["Consultar datos","Borrar","Insertar","Nada"],0],
+["¿INSERT hace?",["Agregar datos","Eliminar","Leer","Nada"],0],
+["¿DELETE hace?",["Eliminar","Leer","Insertar","Nada"],0],
+["¿Qué es tabla?",["Estructura datos","HTML","Loop","Nada"],0],
+["¿Primary key?",["Identificador único","Color","Loop","Nada"],0]
+]
+};
+
+// ===== GENERAR =====
+function generarPreguntas(){
 preguntas=[];
+let base=banco[campo];
 
-let base=[
-["¿Qué es una variable?",["Guardar datos","Bucle","Error","Evento"],0],
-["¿Qué es un if?",["Condición","Bucle","HTML","Error"],0],
-["¿Qué es HTML?",["Estructura","BD","Servidor","Error"],0],
-["¿Qué hace CSS?",["Diseño","BD","Error","Loop"],0],
-["¿Qué es JS?",["Lenguaje","Color","Imagen","Nada"],0]
-];
-
-// genera 10 preguntas mezcladas
 for(let i=0;i<10;i++){
-let b=base[Math.floor(Math.random()*base.length)];
-preguntas.push({
-p:b[0]+" (Nivel "+(nivel+1)+")",
-o:[...b[1]],
-c:b[2]
-});
+let q=base[Math.floor(Math.random()*base.length)];
+preguntas.push({p:q[0],o:[...q[1]],c:q[2]});
 }
-
-preguntaIndex=0;
+pIndex=0;
 }
 
 // ===== MEZCLA =====
 function mezclar(p){
 let arr=p.o.map((t,i)=>({t,ok:i===p.c}));
 for(let i=arr.length-1;i>0;i--){
-let j=Math.floor(Math.random()* (i+1));
+let j=Math.floor(Math.random()*(i+1));
 [arr[i],arr[j]]=[arr[j],arr[i]];
 }
 return arr;
@@ -161,10 +209,13 @@ return arr;
 
 // ===== UI =====
 function actualizar(){
-info.innerText=`Nivel ${nivel+1} | XP ${xp}`;
-vidas.innerText="❤️".repeat(vidas);
+info.innerText=`Nivel ${nivel+1} | XP ${xp} | ${campo}`;
 
-let p=preguntas[preguntaIndex];
+vida.style.width=vidas+"%";
+if(vidas<30) vida.style.background="red";
+else if(vidas<60) vida.style.background="orange";
+
+let p=preguntas[pIndex];
 pregunta.innerText=p.p;
 
 opciones.innerHTML="";
@@ -179,19 +230,20 @@ opciones.appendChild(b);
 // ===== RESPUESTA =====
 function responder(ok){
 if(ok){
-xp+=5;
-preguntaIndex++;
+xp+=10;
+pIndex++;
 
-if(preguntaIndex>=preguntas.length){
+if(pIndex>=preguntas.length){
 nivel++;
+
 if(nivel>=10){
 final("🏆 GANASTE TODO");
 return;
 }
-generarNivel();
+generarPreguntas();
 }
 }else{
-vidas--;
+vidas-=20;
 if(vidas<=0){
 final("💀 GAME OVER");
 return;
@@ -202,36 +254,36 @@ guardar();
 actualizar();
 }
 
-// ===== ANTERIOR =====
+// ===== ATRAS =====
 function anterior(){
-if(preguntaIndex>0){
-preguntaIndex--;
+if(pIndex>0){
+pIndex--;
 actualizar();
 }
 }
 
 // ===== GUARDAR =====
 function guardar(){
-let data=JSON.parse(localStorage.getItem("users"))||{};
-data[usuario.correo]={
-nivel,xp,campo
-};
-localStorage.setItem("users",JSON.stringify(data));
+let db=JSON.parse(localStorage.getItem("users"))||{};
+db[usuario.correo]={nivel,xp,campo};
+localStorage.setItem("users",JSON.stringify(db));
 }
 
 // ===== FINAL =====
 function final(msg){
 mensajeFinal.innerText=msg;
 pantallaFinal.classList.remove("oculto");
+juego.classList.add("oculto");
 }
 
 // ===== RESET =====
 function reiniciar(){
-vidas=3;
+vidas=100;
 xp=0;
 nivel=0;
 pantallaFinal.classList.add("oculto");
-generarNivel();
+juego.classList.remove("oculto");
+generarPreguntas();
 actualizar();
 }
 
