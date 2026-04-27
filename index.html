@@ -3,82 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juego Programación PRO</title>
+<title>Juego PRO</title>
 
 <style>
 body{
 margin:0;
-font-family:'Segoe UI',sans-serif;
-background: radial-gradient(circle at top,#0f2027,#203a43,#2c5364);
+font-family:sans-serif;
+background:linear-gradient(#0f2027,#203a43,#2c5364);
 color:white;
 text-align:center;
-}
-
-h1{
-background:rgba(0,0,0,0.4);
-padding:20px;
-margin:0;
 }
 
 .contenedor{
 margin:20px auto;
 padding:20px;
-width:85%;
+width:90%;
 max-width:700px;
-background:rgba(0,0,0,0.5);
+background:rgba(0,0,0,0.6);
 border-radius:15px;
-box-shadow:0 0 20px cyan;
-backdrop-filter: blur(10px);
-animation:fadeIn .5s;
-}
-
-@keyframes fadeIn{
-from{opacity:0; transform:translateY(20px);}
-to{opacity:1; transform:translateY(0);}
 }
 
 button{
 padding:12px;
 margin:8px;
 border:none;
-border-radius:12px;
+border-radius:10px;
 background:#00c6ff;
 color:white;
 cursor:pointer;
-transition:.3s;
-font-weight:bold;
 }
 
-button:hover{
-transform:scale(1.08);
-box-shadow:0 0 10px cyan;
-background:#0072ff;
-}
+button:hover{background:#0072ff}
 
-input{
-padding:12px;
-margin:10px;
-border-radius:10px;
-border:none;
-width:70%;
-}
+.oculto{display:none}
 
-#barraXP{
-width:90%;
-height:20px;
-background:#333;
-border-radius:20px;
-margin:auto;
-}
-
-#progresoXP{
+#pantallaFinal{
+position:fixed;
+top:0;left:0;
+width:100%;
 height:100%;
-width:0%;
-background:linear-gradient(90deg,lime,cyan);
-border-radius:20px;
+background:black;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+font-size:30px;
+z-index:999;
 }
-
-.oculto{display:none;}
 </style>
 </head>
 
@@ -86,173 +57,118 @@ border-radius:20px;
 
 <h1>🎮 Aprende Programación PRO</h1>
 
-<!-- LOGIN -->
-<div class="contenedor" id="login">
-<h2>👤 Registro</h2>
+<div id="login" class="contenedor">
 <input id="nombre" placeholder="Nombre"><br>
 <input id="correo" placeholder="Correo"><br>
 <button onclick="registrar()">Entrar</button>
 </div>
 
-<!-- TEST -->
-<div class="contenedor oculto" id="testBox">
-<h2 id="preguntaTest"></h2>
-<input id="respuestaTest" placeholder="Tu respuesta">
-<br>
-<button onclick="responderTest()">Responder</button>
+<div id="especialidad" class="contenedor oculto">
+<h2>Elige especialidad</h2>
+<button onclick="elegir('ciber')">🛡 Ciberseguridad</button>
+<button onclick="elegir('web')">🌐 Web</button>
+<button onclick="elegir('bd')">🗄 Base de Datos</button>
 </div>
 
-<!-- ESPECIALIDAD -->
-<div class="contenedor oculto" id="especialidadBox">
-<h2>🎯 Elige tu camino</h2>
-
-<button onclick="elegirEspecialidad('Ciberseguridad')">🛡 Ciberseguridad</button>
-<button onclick="elegirEspecialidad('Web')">🌐 Desarrollo Web</button>
-<button onclick="elegirEspecialidad('Base de Datos')">🗄 Base de Datos</button>
-</div>
-
-<!-- JUEGO -->
-<div id="juego" class="oculto">
-
-<div class="contenedor">
+<div id="juego" class="contenedor oculto">
+<p id="info"></p>
 <p id="vidas"></p>
 
-<div id="barraXP">
-<div id="progresoXP"></div>
-</div>
-
-<p id="nivelTexto"></p>
-
-<button onclick="preguntaAnterior()">⬅ Anterior</button>
-<button onclick="reiniciarJuego()">🔄 Reiniciar</button>
-</div>
-
-<div class="contenedor">
 <h2 id="pregunta"></h2>
 <div id="opciones"></div>
+
+<button onclick="anterior()">⬅ Anterior</button>
+<button onclick="reiniciar()">🔄 Reiniciar</button>
 </div>
 
+<div id="pantallaFinal" class="oculto">
+<h1 id="mensajeFinal"></h1>
+<button onclick="reiniciar()">Volver a jugar</button>
 </div>
 
 <script>
 
 // ===== VARIABLES =====
-let usuario=null;
-let vidas=3,xp=0,nivel=0,preguntaActual=0;
+let usuario, campo;
+let vidas=3,xp=0,nivel=0,preguntaIndex=0;
+let preguntas=[];
 
-// ===== REGISTRO =====
+// ===== LOGIN =====
 function registrar(){
-let nombre=nombreInput.value.trim();
-let correo=correo.value.trim();
+usuario={
+nombre:nombre.value,
+correo:correo.value
+};
 
-if(!nombre||!correo)return alert("Completa los datos");
+if(!usuario.nombre||!usuario.correo) return alert("Llena datos");
 
-usuario={nombre,correo};
-
-let db=JSON.parse(localStorage.getItem("usuarios"))||[];
-db.push(usuario);
-localStorage.setItem("usuarios",JSON.stringify(db));
-
+let data=JSON.parse(localStorage.getItem("users"))||{};
+if(data[usuario.correo]){
+// cargar progreso
+let u=data[usuario.correo];
+nivel=u.nivel;
+xp=u.xp;
+campo=u.campo;
+}
 login.classList.add("oculto");
-testBox.classList.remove("oculto");
-
-mostrarPreguntaTest();
-}
-
-// ===== TEST NIVEL =====
-const testNivel=[
-{p:"¿Qué hace una API?",r:"comunica"},
-{p:"¿Qué es XSS?",r:"ataque"},
-{p:"¿SELECT en SQL?",r:"consulta"},
-{p:"HTML sirve para?",r:"estructura"},
-{p:"CSS sirve para?",r:"diseño"},
-{p:"JS sirve para?",r:"logica"},
-{p:"Firewall?",r:"seguridad"},
-{p:"JSON?",r:"datos"},
-{p:"Backend?",r:"servidor"},
-{p:"SQL?",r:"base"}
-];
-
-let iTest=0,puntaje=0;
-
-function mostrarPreguntaTest(){
-preguntaTest.innerText=testNivel[iTest].p;
-respuestaTest.value="";
-}
-
-function responderTest(){
-let r=respuestaTest.value.toLowerCase();
-
-if(r.includes(testNivel[iTest].r)) puntaje++;
-
-iTest++;
-
-if(iTest>=testNivel.length){
-alert("Resultado: "+puntaje+"/10");
-testBox.classList.add("oculto");
-especialidadBox.classList.remove("oculto");
-return;
-}
-
-mostrarPreguntaTest();
+especialidad.classList.remove("oculto");
 }
 
 // ===== ESPECIALIDAD =====
-function elegirEspecialidad(tipo){
-usuario.especialidad=tipo;
-alert("Elegiste: "+tipo);
-
-especialidadBox.classList.add("oculto");
+function elegir(c){
+campo=c;
+especialidad.classList.add("oculto");
 juego.classList.remove("oculto");
 
-actualizarUI();
-cargarPregunta();
+generarNivel();
+actualizar();
 }
 
-// ===== PREGUNTAS =====
-const juego=[
-[
-{p:"¿Qué es una variable?",o:["Guardar datos","Bucle","Evento","HTML"],c:0},
-{p:"¿Qué es HTML?",o:["Estructura web","Lenguaje BD","Servidor","App"],c:0},
-{p:"¿Qué hace CSS?",o:["Diseño","Lógica","Datos","Servidor"],c:0},
-{p:"¿Qué es JS?",o:["Lenguaje programación","Imagen","Color","Texto"],c:0},
-{p:"¿Etiqueta HTML básica?",o:["<p>","if","for","while"],c:0}
-],
-[
-{p:"¿Qué es un if?",o:["Condición","Bucle","Variable","Error"],c:0},
-{p:"¿Qué hace else?",o:["Alternativa","Error","Loop","Nada"],c:0},
-{p:"¿Comparador igualdad?",o:["==","++","--","//"],c:0},
-{p:"¿Mayor que?",o:[">","<","=","!="],c:0},
-{p:"¿Menor que?",o:["<",">","=","!="],c:0}
-]
+// ===== GENERAR PREGUNTAS =====
+function generarNivel(){
+preguntas=[];
+
+let base=[
+["¿Qué es una variable?",["Guardar datos","Bucle","Error","Evento"],0],
+["¿Qué es un if?",["Condición","Bucle","HTML","Error"],0],
+["¿Qué es HTML?",["Estructura","BD","Servidor","Error"],0],
+["¿Qué hace CSS?",["Diseño","BD","Error","Loop"],0],
+["¿Qué es JS?",["Lenguaje","Color","Imagen","Nada"],0]
 ];
+
+// genera 10 preguntas mezcladas
+for(let i=0;i<10;i++){
+let b=base[Math.floor(Math.random()*base.length)];
+preguntas.push({
+p:b[0]+" (Nivel "+(nivel+1)+")",
+o:[...b[1]],
+c:b[2]
+});
+}
+
+preguntaIndex=0;
+}
 
 // ===== MEZCLA =====
 function mezclar(p){
 let arr=p.o.map((t,i)=>({t,ok:i===p.c}));
 for(let i=arr.length-1;i>0;i--){
-let j=Math.floor(Math.random()*(i+1));
+let j=Math.floor(Math.random()* (i+1));
 [arr[i],arr[j]]=[arr[j],arr[i]];
 }
 return arr;
 }
 
 // ===== UI =====
-function actualizarUI(){
-vidas.innerHTML="❤️".repeat(vidas);
-progresoXP.style.width=xp+"%";
-nivelTexto.innerText=`Nivel ${nivel+1} - Pregunta ${preguntaActual+1}`;
-}
+function actualizar(){
+info.innerText=`Nivel ${nivel+1} | XP ${xp}`;
+vidas.innerText="❤️".repeat(vidas);
 
-// ===== PREGUNTA =====
-function cargarPregunta(){
-let p=juego[nivel][preguntaActual];
+let p=preguntas[preguntaIndex];
 pregunta.innerText=p.p;
 
-let ops=mezclar(p);
 opciones.innerHTML="";
-
-ops.forEach(o=>{
+mezclar(p).forEach(o=>{
 let b=document.createElement("button");
 b.innerText=o.t;
 b.onclick=()=>responder(o.ok);
@@ -260,312 +176,63 @@ opciones.appendChild(b);
 });
 }
 
-// ===== RESPONDER =====
+// ===== RESPUESTA =====
 function responder(ok){
 if(ok){
-xp=Math.min(xp+10,100);
-preguntaActual++;
+xp+=5;
+preguntaIndex++;
 
-if(preguntaActual>=juego[nivel].length){
+if(preguntaIndex>=preguntas.length){
 nivel++;
-preguntaActual=0;
-
-if(nivel>=juego.length){
-alert("🏆 GANASTE TODO");
-reiniciarJuego();
+if(nivel>=10){
+final("🏆 GANASTE TODO");
 return;
 }
+generarNivel();
 }
 }else{
 vidas--;
 if(vidas<=0){
-alert("💀 Game Over");
-reiniciarJuego();
+final("💀 GAME OVER");
 return;
 }
 }
 
 guardar();
-actualizarUI();
-cargarPregunta();
+actualizar();
 }
 
-// ===== ATRAS =====
-function preguntaAnterior(){
-if(preguntaActual>0){
-preguntaActual--;
-cargarPregunta();
+// ===== ANTERIOR =====
+function anterior(){
+if(preguntaIndex>0){
+preguntaIndex--;
+actualizar();
 }
 }
 
 // ===== GUARDAR =====
 function guardar(){
-localStorage.setItem(usuario.correo,JSON.stringify({xp,nivel}));
+let data=JSON.parse(localStorage.getItem("users"))||{};
+data[usuario.correo]={
+nivel,xp,campo
+};
+localStorage.setItem("users",JSON.stringify(data));
+}
+
+// ===== FINAL =====
+function final(msg){
+mensajeFinal.innerText=msg;
+pantallaFinal.classList.remove("oculto");
 }
 
 // ===== RESET =====
-function reiniciarJuego(){
+function reiniciar(){
 vidas=3;
 xp=0;
 nivel=0;
-preguntaActual=0;
-actualizarUI();
-cargarPregunta();
-}
-
-</script>
-
-</body>
-</html>background:#00c6ff;
-color:white;
-cursor:pointer;
-transition:0.3s;
-font-weight:bold;
-}
-
-button:hover{
-transform:scale(1.1);
-box-shadow:0 0 10px cyan;
-background:#0072ff;
-}
-
-input{
-padding:10px;
-margin:10px;
-border-radius:10px;
-border:none;
-}
-
-#barraXP{
-width:80%;
-height:20px;
-background:#333;
-border-radius:20px;
-margin:auto;
-}
-
-#progresoXP{
-height:100%;
-width:0%;
-background:linear-gradient(90deg,lime,cyan);
-}
-</style>
-</head>
-
-<body>
-
-<h1>🎮 Aprende Programación PRO</h1>
-
-<!-- LOGIN -->
-<div class="contenedor" id="login">
-<h2>👤 Registro</h2>
-<input type="text" id="nombre" placeholder="Nombre"><br>
-<input type="email" id="correo" placeholder="Correo"><br>
-<button onclick="registrar()">Entrar</button>
-</div>
-
-<!-- JUEGO -->
-<div id="juego" style="display:none;">
-
-<div class="contenedor">
-<p id="vidas"></p>
-
-<div id="barraXP">
-<div id="progresoXP"></div>
-</div>
-
-<p id="nivelTexto"></p>
-<button onclick="reiniciarJuego()">🔄 Reiniciar</button>
-</div>
-
-<div class="contenedor">
-<h2 id="pregunta"></h2>
-<div id="opciones"></div>
-</div>
-
-</div>
-
-<script>
-
-// ===== VARIABLES =====
-let usuario=null;
-let vidas=3;
-let xp=0;
-let nivel=0;
-let preguntaActual=0;
-
-// ===== REGISTRO =====
-function registrar(){
-let nombre=document.getElementById("nombre").value;
-let correo=document.getElementById("correo").value;
-
-if(nombre===""||correo===""){
-alert("Completa los datos");
-return;
-}
-
-usuario={nombre,correo,progreso:0};
-
-let usuarios=JSON.parse(localStorage.getItem("usuarios"))||[];
-usuarios.push(usuario);
-localStorage.setItem("usuarios",JSON.stringify(usuarios));
-
-document.getElementById("login").style.display="none";
-
-iniciarTestNivel();
-}
-
-// ===== TEST NIVEL =====
-const testNivel=[
-{p:"¿Qué es una API?",r:"comunicacion"},
-{p:"¿Qué es XSS?",r:"ataque"},
-{p:"¿Qué es SELECT?",r:"consulta"},
-{p:"¿Qué es HTML?",r:"estructura"},
-{p:"¿Qué hace CSS?",r:"diseño"},
-{p:"¿Qué es JS?",r:"logica"},
-{p:"¿Qué es firewall?",r:"seguridad"},
-{p:"¿Qué es JSON?",r:"datos"},
-{p:"¿Qué es backend?",r:"servidor"},
-{p:"¿Qué es SQL?",r:"base"}
-];
-
-let preguntaTest=0;
-let puntajeTest=0;
-
-function iniciarTestNivel(){
-alert("🧠 Test de nivel iniciado");
-mostrarPreguntaTest();
-}
-
-function mostrarPreguntaTest(){
-if(preguntaTest>=testNivel.length){
-alert("Resultado: "+puntajeTest+"/10");
-seleccionarEspecialidad();
-return;
-}
-
-let r=prompt(testNivel[preguntaTest].p);
-
-if(r && r.toLowerCase().includes(testNivel[preguntaTest].r)){
-puntajeTest++;
-}
-
-preguntaTest++;
-mostrarPreguntaTest();
-}
-
-// ===== ESPECIALIDAD =====
-function seleccionarEspecialidad(){
-let opcion=prompt("Elige especialidad:\n1. Ciberseguridad\n2. Web\n3. Base de Datos");
-
-if(opcion==1) usuario.especialidad="Ciberseguridad";
-else if(opcion==2) usuario.especialidad="Web";
-else usuario.especialidad="Base de Datos";
-
-alert("Elegiste: "+usuario.especialidad);
-
-document.getElementById("juego").style.display="block";
-
-actualizarUI();
-cargarPregunta();
-}
-
-// ===== PREGUNTAS =====
-const juego=[
-[
-{p:"¿Qué es una variable?",o:["Guardar datos","Bucle","Evento","HTML","CSS"],c:0},
-{p:"¿Qué es HTML?",o:["Estructura web","Base datos","Juego","App","Servidor"],c:0},
-{p:"¿Qué hace CSS?",o:["Diseño","Lógica","BD","Servidor","Nada"],c:0},
-{p:"¿Qué es JS?",o:["Lenguaje programación","Color","Imagen","Texto","Nada"],c:0},
-{p:"¿Etiqueta básica?",o:["<p>","if","for","while","var"],c:0}
-]
-];
-
-// ===== MEZCLAR OPCIONES =====
-function mezclarOpciones(pregunta){
-let opciones=pregunta.o.map((t,i)=>({
-texto:t,
-correcta:i===pregunta.c
-}));
-
-for(let i=opciones.length-1;i>0;i--){
-let j=Math.floor(Math.random()*(i+1));
-[opciones[i],opciones[j]]=[opciones[j],opciones[i]];
-}
-
-return opciones;
-}
-
-// ===== UI =====
-function actualizarUI(){
-document.getElementById("vidas").innerHTML="❤️".repeat(vidas);
-document.getElementById("progresoXP").style.width=xp+"%";
-document.getElementById("nivelTexto").innerText=
-"Nivel "+(nivel+1)+" - Pregunta "+(preguntaActual+1);
-}
-
-// ===== CARGAR PREGUNTA =====
-function cargarPregunta(){
-let p=juego[nivel][preguntaActual];
-document.getElementById("pregunta").innerText=p.p;
-
-let opciones=mezclarOpciones(p);
-
-let html="";
-opciones.forEach(op=>{
-html+=`<button onclick="responder(${op.correcta})">${op.texto}</button>`;
-});
-
-document.getElementById("opciones").innerHTML=html;
-}
-
-// ===== RESPONDER =====
-function responder(correcta){
-if(correcta){
-xp=Math.min(xp+10,100);
-preguntaActual++;
-
-if(preguntaActual>=juego[nivel].length){
-nivel++;
-preguntaActual=0;
-
-if(nivel>=juego.length){
-alert("🏆 GANASTE");
-reiniciarJuego();
-return;
-}
-
-alert("🎉 Nivel superado");
-}
-}else{
-vidas--;
-if(vidas<=0){
-alert("💀 Game Over");
-reiniciarJuego();
-return;
-}
-}
-
-guardarProgreso();
-actualizarUI();
-cargarPregunta();
-}
-
-// ===== GUARDAR =====
-function guardarProgreso(){
-localStorage.setItem(usuario.correo,JSON.stringify({
-xp,nivel
-}));
-}
-
-// ===== RESET =====
-function reiniciarJuego(){
-vidas=3;
-xp=0;
-nivel=0;
-preguntaActual=0;
-actualizarUI();
-cargarPregunta();
+pantallaFinal.classList.add("oculto");
+generarNivel();
+actualizar();
 }
 
 </script>
